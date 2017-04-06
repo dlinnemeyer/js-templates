@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Redux basic example</title>
+    <script src="https://unpkg.com/redux@latest/dist/redux.min.js"></script>
+  </head>
+  <body>
+    <div>
+      <p>
+        Clicked: <span id="counterDisplay">0</span> times
+        <button id="increment">+</button>
+        <button id="decrement">-</button>
+        <button id="incrementByTen">Increment by ten</button>
+        <button id="incrementIfOdd">Increment if odd</button>
+        <button id="incrementAsync">Increment async</button>
+      </p>
+    </div>
+    <script>
+      // ripped off from https://github.com/reactjs/redux/blob/master/examples/counter-vanilla/index.html
+
+      // actions
+      function increment(x){ return {type: 'INCREMENT', value: x}; }
+      function decrement(x){ return {type: 'DECREMENT', value: x}; }
+
+      // reducer
+      function counter(state, action) {
+        switch (action.type) {
+          case 'INCREMENT':
+            return {counter: state.counter + action.value}
+          case 'DECREMENT':
+            return {counter: state.counter - action.value}
+          default:
+            return state
+        }
+      }
+
+      // setup store
+      var store = Redux.createStore(counter, {counter: 0})
+      // wrap store.getState() so we don't have to keep referring to the global
+      // store variable
+      function getState(){
+        return store.getState()
+      }
+
+      // rendering
+      var EL = {
+        counterDisplay: document.getElementById("counterDisplay")
+      }
+      function render() {
+        var state = getState()
+        EL.counterDisplay.innerHTML = counterString(state)
+      }
+
+      // rendering view-ish sub-functions
+      function counterString(state){
+        return state.counter.toString()
+      }
+
+      // kick off the rendering
+      render()
+      store.subscribe(render)
+
+      // setup event listeners
+      document.getElementById('increment')
+        .addEventListener('click', function () {
+          store.dispatch(increment(1))
+        })
+      document.getElementById('decrement')
+        .addEventListener('click', function () {
+          store.dispatch(decrement(1))
+        })
+      document.getElementById('incrementIfOdd')
+        .addEventListener('click', function () {
+          if (getState().counter % 2 !== 0) {
+            store.dispatch(increment(1))
+          }
+        })
+      document.getElementById('incrementByTen')
+        .addEventListener('click', function () {
+          store.dispatch(increment(10))
+        })
+      document.getElementById('incrementAsync')
+        .addEventListener('click', function () {
+          setTimeout(function () {
+            store.dispatch(increment(1))
+          }, 1000)
+        })
+    </script>
+  </body>
+</html>
