@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Websocker Basic Example</title>
+  </head>
+  <body>
+    <div>
+      <p id="statusText">Waiting to connect....</p>
+      <button style="visibility: hidden" id="sendButton">Send Ping</button>
+    </div>
+    <script>
+        var EL = {
+          sendButton: document.getElementById("sendButton"),
+          statusText: document.getElementById("statusText")
+        }
+
+        // html utilities
+        function hide(el){ el.style.visibility = 'hidden'; }
+        function show(el){ el.style.visibility = 'visible'; }
+        function setStatus(text){ EL.statusText.innerHTML = text; }
+
+        var connection = new WebSocket('ws://localhost:9030');
+
+        EL.sendButton.addEventListener('click', function(){
+          connection.send("ping")
+          setStatus("Sent ping")
+        })
+
+        connection.onopen = function () {
+          setStatus("Connected!");
+          show(EL.sendButton);
+        };
+
+        // Log errors
+        connection.onerror = function (error) {
+          console.error('WebSocket Error ' + error);
+        };
+
+        // Log messages from the server
+        connection.onmessage = function (e) {
+            setStatus("Received: " + e.data);
+        };
+    </script>
+  </body>
+</html>

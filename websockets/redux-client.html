@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Websocker Basic Example</title>
+    <script src="https://unpkg.com/redux@latest/dist/redux.min.js"></script>
+  </head>
+  <body>
+    <div>
+      <p id="statusText"></p>
+      <button style="visibility: hidden" id="sendButton">Send Ping</button>
+      <button style="visibility: hidden" id="resetPingPongs">Reset Ping Pongs</button>
+      <p style="visibility: hidden" id="pingsSent"></p>
+      <p style="visibility: hidden" id="pongsReceived"></p>
+    </div>
+    <script>
+      WS_STATUS = {
+        CONNECTING: 1,
+        CONNECTED: 2,
+        WAITING: 3,
+        RECEIVED: 4
+      }
+
+      // actions
+      function sendPing(){ return {type: 'SEND_PING'}; }
+      function receivePong(){ return {type: 'RECEIVE_PONG'}; }
+      function resetPingPongs(){ return {type: 'RESET'}; }
+      function connect(){ return {type: 'CONNECT'}; }
+
+      // reducer
+      function counter(state, action) {
+        switch (action.type) {
+          case 'SEND_PING':
+            return merge(state, {
+              pings: state.pings + 1,
+              wsStatus: WS_STATUS.WAITING
+            })
+          case 'RECEIVE_PONG':
+            return merge(state, {
+              pongs: state.pongs + 1,
+              wsStatus: WS_STATUS.RECEIVED
+            })
+          case 'CONNECT': 
+            return merge(state, {
+              wsStatus: WS_STATUS.CONNECTED
+            })
+          case 'RESET':
+            return merge(state, {pings: 0, pongs: 0})
+          default:
+            return state
+        }
+      }
+
+      function merge(a, b){
+        return Object.assign({}, a, b)
+      }
+
+      // setup store
+      var store = Redux.createStore(counter, {
+          pings: 0,
+          pongs: 0,
+          wsStatus: WS_STATUS.CONNECTING
+      })
+
+      // wrap store.getState() so we don't have to keep referring to the global
+      // store variable
+      function getState(){
+        return store.getState()
+      }
+
+      // rendering
+      var EL = {
+        sendButton: document.getElementById("sendButton"),
+        statusText: document.getElementById("statusText"),
+        pingsSent: document.getElementById("pingsSent"),
+        pongsReceived: document.getElementById("pongsReceived"),
+        resetPingPongs: document.getElementById("resetPingPongs"),
+      }
+
+      function hide(el){ el.style.visibility = 'hidden'; }
+      function show(el){ el.style.visibility = 'visible'; }
+
+      function render() {
+        var state = getState()
+        EL.statusText.innerHTML = statusToText(state.wsStatus)
+        EL.pingsSent.innerHTML = state.pings.toString()
+        EL.pongsReceived.innerHTML = state.pongs.toString()
+
+        var showOrHide = state.wsStatus == WS_STATUS.CONNECTING ? hide : show
+        showOrHide(EL.pingsSent)
+        showOrHide(EL.pongsReceived)
+        showOrHide(EL.resetPingPongs)
+        showOrHide(EL.sendButton)
+      }
+
+      function statusToText(wsStatus){
+        switch(wsStatus){
+          case WS_STATUS.CONNECTING:
+            return 'Connecting to websocket...';
+          case WS_STATUS.CONNECTED:
+            return 'Connected!';
+          case WS_STATUS.WAITING:
+            return 'Waiting for pong..';
+          case WS_STATUS.RECEIVED:
+            return 'Received pong!';
+        }
+      }
+
+      // kick off the rendering
+      render()
+      store.subscribe(render)
+
+      // and now for the websockets
+      var connection = new WebSocket('ws://localhost:9030');
+      
+      EL.sendButton.addEventListener('click', function(){
+        connection.send("ping")
+        store.dispatch(sendPing())
+      })
+
+      EL.resetPingPongs.addEventListener('click', function(){
+        store.dispatch(resetPingPongs())
+      })
+      
+      connection.onopen = function () {
+        store.dispatch(connect())
+      };
+      
+      // Log errors
+      connection.onerror = function (error) {
+        console.error('WebSocket Error ' + error);
+      };
+      
+      // Log messages from the server
+      connection.onmessage = function (e) {
+        store.dispatch(receivePong())
+      };
+    </script>
+  </body>
+</html>
